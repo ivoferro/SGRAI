@@ -39,7 +39,7 @@ State state;
 Model model;
 
 void polygon(GLint n, GLfloat x0, GLfloat y0, GLfloat r);
-void marks(GLfloat x0, GLfloat y0, GLfloat r0, GLfloat r1, GLfloat r2);
+void marks(GLfloat x0, GLfloat y0, GLfloat r0, GLfloat r1, GLfloat r2, GLfloat r3);
 void seconds(GLfloat x0, GLfloat y0, GLfloat r0);
 void minutes(GLfloat x0, GLfloat y0, GLfloat r0);
 void hour(GLfloat x0, GLfloat y0, GLfloat r0);
@@ -127,7 +127,7 @@ void Draw(void)
 	// ... call of the auxiliar drawing routines ...
 
 	polygon(30, 0.0, 0.0, 0.9);
-	marks(0.0, 0.0, 0.6, 0.7, 0.8);
+	marks(0.0, 0.0, 0.5, 0.6, 0.7, 0.8);
 
 	seconds(0.0, 0.0, 0.5);
 	minutes(0.0, 0.0, 0.4);
@@ -346,28 +346,41 @@ void polygon(GLint n, GLfloat x0, GLfloat y0, GLfloat r) {
 	glEnd();
 }
 
-void marks(GLfloat x0, GLfloat y0, GLfloat r0, GLfloat r1, GLfloat r2) {
+void marks(GLfloat x0, GLfloat y0, GLfloat r0, GLfloat r1, GLfloat r2, GLfloat r3) {
 	GLfloat t, x, y;
 	t = 0.0;
 
 	glBegin(GL_LINES);
 
 	glColor3f(0.0, 0.0, 1.0);
+	for (size_t i = 0; i < 60; i++)
+	{
+		x = r2 * cos(t) + x0;
+		y = r2 * sin(t) + y0;
+		glVertex2f(x, y);
+
+		x = r3 * cos(t) + x0;
+		y = r3 * sin(t) + y0;
+		glVertex2f(x, y);
+
+		t += 2 * M_PI / 60;
+	}
+
+	glColor3f(0.0, 1.0, 1.0);
 	for (size_t i = 0; i < 12; i++)
 	{
 		x = r1 * cos(t) + x0;
 		y = r1 * sin(t) + y0;
-
 		glVertex2f(x, y);
 
-		x = r2 * cos(t) + x0;
-		y = r2 * sin(t) + y0;
+		x = r3 * cos(t) + x0;
+		y = r3 * sin(t) + y0;
 		glVertex2f(x, y);
 
 		t += 2 * M_PI / 12;
 	}
 
-	glColor3f(0.0, 1.0, 1.0);
+	glColor3f(0.5, 1.0, 0.0);
 	for (size_t i = 0; i < 4; i++)
 	{
 		x = r0 * cos(t) + x0;
@@ -375,8 +388,8 @@ void marks(GLfloat x0, GLfloat y0, GLfloat r0, GLfloat r1, GLfloat r2) {
 
 		glVertex2f(x, y);
 
-		x = r2 * cos(t) + x0;
-		y = r2 * sin(t) + y0;
+		x = r3 * cos(t) + x0;
+		y = r3 * sin(t) + y0;
 		glVertex2f(x, y);
 
 		t += 2 * M_PI / 4;
