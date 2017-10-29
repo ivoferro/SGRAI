@@ -121,7 +121,6 @@ void Init(void)
 **************************************/
 
 // CALLBACK TO RESHAPE WINDOW
-
 void Reshape(int width, int height)
 {
 	// glViewport(botom, left, width, height)
