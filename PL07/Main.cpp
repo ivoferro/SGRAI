@@ -67,6 +67,8 @@ typedef struct {
 	GLfloat     directionWheels;
 	GLfloat     angTower;
 	GLfloat     angCannon;
+	GLfloat     accelarationInclination;
+	GLfloat     turningInclination;
 } Tank;
 
 typedef struct {
@@ -86,6 +88,8 @@ void initiate_model()
 	model.tank.directionWheels = 0;
 	model.tank.angTower = 0;
 	model.tank.angCannon = 0;
+	model.tank.accelarationInclination = 0;
+	model.tank.turningInclination = 0;
 }
 
 /* OpenGL Environment Initialization */
@@ -275,19 +279,18 @@ void drawWheel() {
 
 void drawTank(Tank t)
 {
+	// moves the tank in circular way (automatic)
 	//glRotatef(model.tank.direction, 0, 0, 1);
-	glTranslatef(RAIO_ROTACAO, 0, 0.5);
 
-	// Base
-	glTranslatef(0, 0, ALTURA_BASE * 0.5 );
-	glPushMatrix();
-	glScalef(LARGURA_BASE, COMPRIMENTO_BASE, ALTURA_BASE);
-	drawCube();
-	glPopMatrix();
+	//moves tank
+	glTranslatef(model.tank.x, model.tank.y, 0);
+	//rotates tank
+	glRotatef(model.tank.direction, 0, 0, 1);
 
 	// Wheels
 	glPushMatrix();
-	glTranslatef(LARGURA_BASE/2, COMPRIMENTO_BASE/2, -0.5);
+	glColor3f(0, 0, 1.0);
+	glTranslatef(LARGURA_BASE/2, COMPRIMENTO_BASE/2, 0.5);
 	drawWheel();
 	glTranslatef(0, -COMPRIMENTO_BASE+1, 0);
 	drawWheel();
@@ -295,6 +298,17 @@ void drawTank(Tank t)
 	drawWheel();
 	glTranslatef(0, COMPRIMENTO_BASE-1, 0);
 	drawWheel();
+	glPopMatrix();
+
+	// Tank inclination
+	glRotatef(model.tank.accelarationInclination, 1, 0, 0);
+	glRotatef(model.tank.turningInclination, 0, 1, 0);
+
+	// Base
+	glTranslatef(0, 0, ALTURA_BASE * 0.5 + 0.5 );
+	glPushMatrix();
+	glScalef(LARGURA_BASE, COMPRIMENTO_BASE, ALTURA_BASE);
+	drawCube();
 	glPopMatrix();
 
 	// Tower
@@ -338,6 +352,15 @@ void Draw(void)
 
 	glLoadIdentity();
 
+	state.camera.up.x = 0;
+	state.camera.up.y = 0;
+	state.camera.up.z = 1;
+	state.camera.center.x = model.tank.x;
+	state.camera.center.y = model.tank.y;
+	state.camera.center.z = ALTURA_BASE + ALTURA_TORRE;
+	state.camera.eye.x = state.camera.center.x - 20 * cos(RAD(model.tank.direction + 90));
+	state.camera.eye.y = state.camera.center.y - 20 * sin(RAD(model.tank.direction + 90));
+	state.camera.eye.z = state.camera.center.z + 5;
 	gluLookAt(state.camera.eye.x, state.camera.eye.y, state.camera.eye.z, \
 		state.camera.center.x, state.camera.center.y, state.camera.center.z, \
 		state.camera.up.x, state.camera.up.y, state.camera.up.z);
@@ -368,6 +391,7 @@ void Timer(int value)
 	glutTimerFunc(state.movementDelay, Timer, 0);
 	// ... timer actions ... 
 
+	// moves the tower
 	if (state.keys.z)
 	{
 		model.tank.angTower += 2;
@@ -385,10 +409,46 @@ void Timer(int value)
 		model.tank.angCannon -= 2;
 	}
 
-	if (!model.pause)
+	// rotates the tank
+	model.tank.turningInclination = 0;
+	if (state.keys.right && model.tank.velocity != 0)
 	{
-		model.tank.direction += 1;
+		model.tank.direction -= 2;
+		model.tank.turningInclination = -5;
 	}
+	if (state.keys.left && model.tank.velocity != 0)
+	{
+		model.tank.direction += 2;
+		model.tank.turningInclination = 5;
+	}
+
+	// accelerates the tank
+	if (state.keys.up && model.tank.velocity < 0.7)
+	{
+		model.tank.velocity += 0.1;
+		model.tank.accelarationInclination = 5;
+	}
+	if (!state.keys.up && model.tank.velocity > 0)
+	{
+		model.tank.velocity = 0;
+		model.tank.accelarationInclination = 0;
+	}
+
+	// reverse the tank
+	if (state.keys.down && model.tank.velocity > -0.5)
+	{
+		model.tank.velocity -= 0.1;
+		model.tank.accelarationInclination = -5;
+	}
+	if (!state.keys.down && model.tank.velocity < 0)
+	{
+		model.tank.velocity = 0;
+		model.tank.accelarationInclination = 0;
+	}
+
+	// changes tank position
+	model.tank.x += model.tank.velocity * cos(RAD(model.tank.direction + 90));
+	model.tank.y += model.tank.velocity * sin(RAD(model.tank.direction + 90));
 
 	if (state.menuActive || model.pause)  // exit if the menu is activated or if the game is paused
 		return;
@@ -526,7 +586,18 @@ void SpecialKey(int key, int x, int y)
 	//    GLUT_KEY_INSERT 
 
 	switch (key) {
-
+	case GLUT_KEY_UP:
+		state.keys.up = GL_TRUE;
+		break;
+	case GLUT_KEY_DOWN:
+		state.keys.down = GL_TRUE;
+		break;
+	case GLUT_KEY_RIGHT:
+		state.keys.right = GL_TRUE;
+		break;
+	case GLUT_KEY_LEFT:
+		state.keys.left = GL_TRUE;
+		break;
 		// redraws the screen
 		//glutPostRedisplay();
 	}
@@ -541,6 +612,18 @@ void SpecialKey(int key, int x, int y)
 void SpecialKeyUp(int key, int x, int y)
 {
 	switch (key) {
+	case GLUT_KEY_UP:
+		state.keys.up = GL_FALSE;
+		break;
+	case GLUT_KEY_DOWN:
+		state.keys.down = GL_FALSE;
+		break;
+	case GLUT_KEY_RIGHT:
+		state.keys.right = GL_FALSE;
+		break;
+	case GLUT_KEY_LEFT:
+		state.keys.left = GL_FALSE;
+		break;
 	}
 	if (state.debug)
 		printf("The special key %d was released\n", key);
